@@ -57,12 +57,12 @@ const Home = () => {
 
   const handleCheckIn = () => {
     if (isCheckedIn) {
-      Alert.alert("Perhatian", "Anda sudah melakukan Check In.");
+      setTimeout(() => Alert.alert("Perhatian", "Anda sudah melakukan Check In."), 10);
       return;
     }
 
     if (note.trim() === '') {
-      Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!");
+      setTimeout(() => Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!"), 10);
       noteInputRef.current.focus();
       return;
     }
@@ -76,7 +76,7 @@ const Home = () => {
 
     setHistoryData([newAttendance, ...historyData]);
     setIsCheckedIn(true);
-    Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`);
+    setTimeout(() => Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`), 10);
   };
 
   const renderItem = ({ item }) => (
@@ -166,12 +166,13 @@ const Home = () => {
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Attendance History</Text>
           
-          <FlatList
-            data={historyData}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            scrollEnabled={false}
-          />
+          <View>
+            {historyData.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderItem({ item })}
+              </React.Fragment>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
