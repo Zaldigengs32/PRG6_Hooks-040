@@ -1,9 +1,7 @@
 import React, { Component } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 
-// 1. Class Component
-
-export class KartuClass extends Coponent {
+export class KartuClass extends Component {
   render() {
     return (
         <View> 
@@ -14,8 +12,6 @@ export class KartuClass extends Coponent {
   }
 }
 
-// 2. Functional Component
-
 export const KartuFunctional = () => {
     return (
         <View>
@@ -23,4 +19,4 @@ export const KartuFunctional = () => {
             <Text>Sintaks saya lebih singkat dan tidak butuh render()</Text>
         </View>
     );
-}
+};

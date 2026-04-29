@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, SafeAreaView, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import PropTypes from 'prop-types';
 
 export default function DetailScreen({ route }) {
-  // Membongkar paket data yang dikirim dari HistoryScreen
   const { dataPresensi } = route.params;
 
   return (
@@ -24,17 +25,33 @@ export default function DetailScreen({ route }) {
 
         <View style={styles.row}>
           <Text style={styles.label}>Ruangan:</Text>
-          <Text style={styles.value}>{dataPresensi.room}</Text>
+          <Text style={styles.value}>{dataPresensi.ruangan || dataPresensi.room || '-'}</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Dosen Pengampu:</Text>
-          <Text style={styles.value}>{dataPresensi.lecturer}</Text>
+          <Text style={styles.value}>{dataPresensi.dosenPengampu || dataPresensi.lecturer || '-'}</Text>
         </View>
       </View>
     </SafeAreaView>
   );
 }
+
+DetailScreen.propTypes = {
+  route: PropTypes.shape({
+    params: PropTypes.shape({
+      dataPresensi: PropTypes.shape({
+        course: PropTypes.string.isRequired,
+        date: PropTypes.string.isRequired,
+        status: PropTypes.string.isRequired,
+        ruangan: PropTypes.string,
+        room: PropTypes.string,
+        dosenPengampu: PropTypes.string,
+        lecturer: PropTypes.string,
+      }).isRequired,
+    }).isRequired,
+  }).isRequired,
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5", padding: 20 },

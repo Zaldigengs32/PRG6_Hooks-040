@@ -1,20 +1,25 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { View, Text, SafeAreaView, StyleSheet, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef, useContext } from 'react';
+import {
+  View, Text, StyleSheet,
+  TouchableOpacity, ScrollView, Alert, TextInput, ActivityIndicator
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import PropTypes from 'prop-types';
+import { AuthContext } from '../context/AuthContext';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
 
-  // 2. STATE UNTUK STATUS TOMBOL CHECK-IN
+  const { userData } = useContext(AuthContext);
+
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-
-  // 3. STATE UNTUK JAM DIGITAL
   const [currentTime, setCurrentTime] = useState('Memuat jam...');
-
-  // 4. STATE & REF UNTUK CATATAN (Baru)
   const [note, setNote] = useState('');
-  const noteInputRef = useRef(null); // Membuat "kait" kosong untuk UI
+  const [isPosting, setIsPosting] = useState(false);
+  const noteInputRef = useRef(null);
 
-  // Simulasi statis karena data dipindah ke HistoryScreen
+  const BASE_URL = "http://10.1.9.195:8080/api/presensi";
+
   const attendanceStats = useMemo(() => {
     return { totalPresent: 12, totalAbsent: 2 };
   }, []);
@@ -26,18 +31,56 @@ const HomeScreen = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCheckIn = () => {
-    // Mempertahankan fix setTimeout() sebelumnya agar tidak muncul warning Web 'touch end'
-    if (isCheckedIn) return setTimeout(() => Alert.alert("Perhatian", "Anda sudah Check In."), 10);
-    
+  const handleCheckIn = async () => {
+    if (isCheckedIn) return Alert.alert("Perhatian", "Anda sudah Check In.");
     if (note.trim() === '') {
-      setTimeout(() => Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!"), 10);
+      Alert.alert("Peringatan", "Catatan kehadiran wajib diisi!");
       noteInputRef.current.focus();
       return;
     }
-    
-    setIsCheckedIn(true);
-    setTimeout(() => Alert.alert("Sukses", `Berhasil Check In pada pukul ${currentTime}`), 10);
+
+    setIsPosting(true);
+    const now = new Date();
+
+    const payload = {
+      kodeMk: "TRPL205",
+      course: "Mobile Programming",
+      status: "Present",
+      nimMhs: userData.nim_mhs,
+      pertemuanKe: 5,
+      date: now.toISOString().split('T')[0],
+      jamPresensi: now.toLocaleTimeString('id-ID', { hour12: false }),
+      kode_qr: "AUTH-TRPL205-W5-XYZ987",
+      ruangan: "Lab Komputer 3",
+      dosenPengampu: "Tim Dosen TRPL"
+    };
+
+    try {
+      const response = await fetch(BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setIsCheckedIn(true);
+        Alert.alert("Berhasil!", "Presensi masuk ke Database Java Spring.", [
+          { text: "Lihat Riwayat", onPress: () => navigation.navigate('HistoryTab') }
+        ]);
+      } else {
+        Alert.alert("Gagal", result.message || "Terjadi kesalahan di server.");
+      }
+    } catch (error) {
+      Alert.alert("Error Jaringan", "Pastikan IP Laptop benar dan Spring Boot berjalan.");
+      console.error(error);
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   return (
@@ -45,33 +88,29 @@ const HomeScreen = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Attendance App</Text>
-          {/* Tampilkan State Jam Digital */}
           <Text style={styles.clockText}>{currentTime}</Text>
         </View>
 
-        {/* Student Card */}
         <View style={styles.card}>
           <View style={styles.icon}>
             <MaterialIcons name="person" size={40} color="#555" />
           </View>
           <View>
-            <Text style={styles.name}>Muhamad Zaldi Aprialdi</Text>
-            <Text>NIM : 0320240040</Text>
-            <Text>Class : Manajemen Informatika - 2A</Text>
+            <Text style={styles.name}>{userData.nama}</Text>
+            <Text>NIM : {userData.nim_mhs}</Text>
+            <Text>Class : Informatika-2B</Text>
           </View>
         </View>
 
-        {/* Today's Class */}
         <View style={styles.classCard}>
           <Text style={styles.subtitle}>Today's Class</Text>
-          <Text>Mobile Programming</Text>
+          <Text>Mobile Programming (TRPL205)</Text>
           <Text>08:00 - 10:00</Text>
           <Text>Lab 3</Text>
 
-          {/* Fitur Baru: Kolom Input Catatan dengan useRef */}
           {!isCheckedIn && (
             <TextInput
-              ref={noteInputRef} // <-- Menempelkan referensi ke elemen ini
+              ref={noteInputRef}
               style={styles.inputCatatan}
               placeholder="Tulis catatan (cth: Hadir lab)"
               value={note}
@@ -79,18 +118,21 @@ const HomeScreen = () => {
             />
           )}
 
-          <TouchableOpacity
-            style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
-            onPress={handleCheckIn}
-            disabled={isCheckedIn}
-          >
-            <Text style={styles.buttonText}>
-              {isCheckedIn ? "CHECKED IN" : "CHECK IN"}
-            </Text>
-          </TouchableOpacity>
+          {isPosting ? (
+            <ActivityIndicator size="large" color="#007AFF" style={{marginTop: 15}} />
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, isCheckedIn ? styles.buttonDisabled : styles.buttonActive]}
+              onPress={handleCheckIn}
+              disabled={isCheckedIn}
+            >
+              <Text style={styles.buttonText}>
+                {isCheckedIn ? "CHECKED IN" : "CHECK IN SEKARANG"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Fitur Baru: Statistik Kehadiran (Hasil useMemo) */}
         <View style={styles.statsCard}>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{attendanceStats.totalPresent}</Text>
@@ -105,6 +147,12 @@ const HomeScreen = () => {
       </ScrollView>
     </SafeAreaView>
   );
+};
+
+HomeScreen.propTypes = {
+  navigation: PropTypes.shape({
+    navigate: PropTypes.func.isRequired,
+  }).isRequired,
 };
 
 export default HomeScreen;
